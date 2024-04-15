@@ -34,9 +34,19 @@ func getClient(config *oauth2.Config) *http.Client {
 // Request a token from the web, then returns the retrieved token.
 func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n", authURL)
-
+	fmt.Println("Follow the instructions below:")
+	fmt.Printf("1. Go to the following link in your browser"+"\n%v\n", authURL)
+	fmt.Println("2.After clicking the link it will send you to your OAuth 2.0 Playground. Click 'Step 1 Select & authorize'")
+	fmt.Println("3. Copy and paste this link 'https://mail.google.com/' on the input box provided after clicking 'Step 1 Select & authorize'. Do not click 'Authorize APIs' yet.")
+	fmt.Println("4.Click the settings icon on your top right.")
+	fmt.Println("5.Click the checkbox 'Use your own OAuth credentials' at the end of 'OAuth 2.0 configuration' form.")
+	fmt.Println("6.You will need your 'OAuth Client ID' and 'OAuth Client secret'. Visit your Google APIs Console https://console.cloud.google.com/apis/dashboard?project=delvedetector")
+	fmt.Println("7.Click on Credentials on the left sidebar. Under OAuth 2.0 Client IDs click on your project")
+	fmt.Println("8.Copy and Paste your 'Client ID' and 'Client secret' to your 'OAuth 2.0 Playground'")
+	fmt.Println("9.'Close' the 'OAuth 2.0 configuration' form. Click 'Authorize APIs' next your authorization link")
+	fmt.Println("10.You will be redirected to allow for authorization.")
+	fmt.Println("11.After approving for authorization. You will get an authorization code. Copy it and paste here")
+	fmt.Printf("authorization code:")
 	var authCode string
 	if _, err := fmt.Scan(&authCode); err != nil {
 		log.Fatalf("Unable to read authorization code: %v", err)
@@ -73,6 +83,7 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func main() {
+
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
 	if err != nil {
@@ -92,10 +103,10 @@ func main() {
 	}
 
 	user := "me"
-
+	fmt.Println("Checking for delvers...")
 	r, _ := srv.Users.Messages.List(user).Do()
+	var delvers int
 	for _, l := range r.Messages {
-		fmt.Println(l.Id)
 		msg, _ := srv.Users.Messages.Get(user, l.Id).Do()
 		for _, part := range msg.Payload.Parts {
 			if part.MimeType == "text/plain" {
@@ -106,6 +117,7 @@ func main() {
 				searchTerm := "delve"
 				if strings.Contains(body_string, searchTerm) {
 					deleteEmail(ctx, srv, l.Id)
+					delvers++
 
 				}
 
@@ -114,6 +126,7 @@ func main() {
 		}
 
 	}
+	fmt.Printf("%v delvers found", delvers)
 }
 
 func deleteEmail(ctx context.Context, gmailService *gmail.Service, messageID string) {
